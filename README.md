@@ -99,6 +99,24 @@ Diagnostics: Histograms and Box Plots will be generated for key continuous varia
 2.2. Trend and Relationship Visualization
 Longitudinal Decomposition (RQ1): The league-average time series for both `Pace` and `3PA` will be plotted on a dual-axis line graph. This visualization will confirm the co-evolutionary trend and allow for visual inspection of the periods where the two variables experienced the steepest increases.  Core Relationship Plot (RQ2): A team-level Scatter Plot will illustrate the relationship between the predictor (`3PAr`) and the dependent variable (`Pace`), including a linear regression trend line to visually confirm the hypothesized positive correlation.
 
+3PA vs Pace Relationship
+
+Scatter plot shows clear positive relationship
+More three-point attempts = faster pace
+Correlation: r = 0.64, p < 0.001 (strong and significant)
+
+Interpretation:
+Teams that shoot more threes play faster. The trend line shows this relationship is consistent across all teams and years. This confirms our hypothesis about the "Pace and Space" connection.
+
+Pace vs Winning Percentage
+
+Scatter plot shows weak relationship
+Correlation: r = 0.12, p = 0.08 (not significant)
+Points are scattered everywhere - no clear pattern
+
+Interpretation:
+Pace alone doesn't predict winning. Both fast and slow teams can win or lose. What matters is efficiency (eFG%), not tempo. You can win playing fast or slow, as long as you shoot well.
+
 ---
 
 3. Hypothesis Testing and Preliminary Modeling
@@ -112,3 +130,62 @@ Pearson Correlation: The Pearson product-moment correlation coefficient ($r$) wi
 Model Formulation:** A foundational Simple Linear Regression (OLS) model will be constructed using the `statsmodels` library to quantify the isolated impact of the strategic three-point rate on tempo:
 The Simple Linear Regression (OLS) model establishes a relationship where a team's Pace is determined by a base constant ($\beta_0$) plus the incremental effect ($\beta_1$) of its Three-Point Attempt Rate (\text{3PAr}), with any unexplained variation accounted for by the error term ($\epsilon$).
 Interpretation: The focus will be on the sign and magnitude of the \beta_1 coefficient (expected to be positive) and its associated $p$-value, providing the first numerical evidence for the predictive power of `3PAr` on `Pace`.
+
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score, mean_squared_error
+import numpy as np
+import matplotlib.pyplot as plt
+
+4.1 Applying ML Modells.
+
+# 1. Pace Prediction Model
+X = df[['3PA', '2PA', 'FTA']]
+y = df['Pace']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+print("=== PACE PREDICTION MODEL ===")
+print(f"R² Score: {r2_score(y_test, y_pred):.3f}")
+print(f"RMSE: {np.sqrt(mean_squared_error(y_test, y_pred)):.3f}")
+print(f"\nKatsayılar:")
+print(f"3PA: {model.coef_[0]:.3f}")
+print(f"2PA: {model.coef_[1]:.3f}")
+print(f"FTA: {model.coef_[2]:.3f}")
+
+# 2. Görselleştirme
+plt.figure(figsize=(10, 5))
+
+plt.subplot(1, 2, 1)
+plt.scatter(y_test, y_pred, alpha=0.5)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
+plt.xlabel('Actual Pace')
+plt.ylabel('Predicted Pace')
+plt.title('Pace Model Performance')
+
+# 3. Winning Percentage Model
+X_win = df[['Pace', 'eFG%']]
+y_win = df['W_PCT']
+
+model2 = LinearRegression()
+model2.fit(X_win, y_win)
+y_win_pred = model2.predict(X_win)
+
+print("\n=== WINNING PERCENTAGE MODEL ===")
+print(f"R² Score: {model2.score(X_win, y_win):.3f}")
+print(f"Pace katsayısı: {model2.coef_[0]:.3f}")
+print(f"eFG% katsayısı: {model2.coef_[1]:.3f}")
+
+plt.subplot(1, 2, 2)
+plt.scatter(y_win, y_win_pred, alpha=0.5)
+plt.plot([y_win.min(), y_win.max()], [y_win.min(), y_win.max()], 'r--')
+plt.xlabel('Actual Win%')
+plt.ylabel('Predicted Win%')
+plt.title('Win% Model Performance')
+
+plt.tight_layout()
+plt.show()
